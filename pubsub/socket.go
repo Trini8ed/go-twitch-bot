@@ -1,4 +1,4 @@
-package websocket
+package pubsub
 
 import (
 	"encoding/json"

@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"sync"
 	"time"
-
-	"websocket"
 )
 
 // Twitch Helix API variables
@@ -66,7 +64,7 @@ type PubSub interface {
 
 // PubSubConn is something
 type PubSubConn struct {
-	ws        *websocket.BasicWebsocket
+	ws        *BasicWebsocket
 	authToken string
 
 	pingDone chan bool
@@ -118,7 +116,7 @@ func (c *PubSubConn) connectHandler() {
 
 	c.pingDone = c.startPing()
 
-	err, t := c.listenToAllTopics()
+	t, err := c.listenToAllTopics()
 	if err != nil {
 		c.OnError(err, t)
 	}
