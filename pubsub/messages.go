@@ -1,4 +1,4 @@
-package main
+package pubsub
 
 // BaseMessage is something
 type BaseMessage struct {

@@ -1,4 +1,4 @@
-package main
+package pubsub
 
 import (
 	"fmt"
@@ -104,7 +104,7 @@ func (p *PubSubPool) getTargetConnection() (targetConnection *PubSubConn) {
 // Listen is something
 func (p *PubSubPool) Listen(topic string, callback TopicCallback) (*Topic, error) {
 	if t, _ := p.getTopicByName(topic); t != nil {
-		return nil, fmt.Errorf("listen topic %s: %w", topic, DuplicateTopicError)
+		return nil, fmt.Errorf("listen topic %s: %w", topic, ErrDuplicateTopic)
 	}
 
 	targetConnection := p.getTargetConnection()
@@ -132,7 +132,7 @@ func (p *PubSubPool) ListenMany(callback TopicCallback, topics ...string) ([]*To
 func (p *PubSubPool) Unlisten(topic string) error {
 	t, conn := p.getTopicByName(topic)
 	if t == nil {
-		return fmt.Errorf("unlisten topic %s: %w", topic, InvalidTopicError)
+		return fmt.Errorf("unlisten topic %s: %w", topic, ErrInvalidTopic)
 	}
 
 	err := conn.Unlisten(topic)
@@ -159,7 +159,7 @@ func (p *PubSubPool) IsListening(topic string) bool {
 	return t != nil
 }
 
-// IsListening is something
+// Start is something
 func (p *PubSubPool) Start() (err error) {
 	p.runningMutex.Lock()
 	defer p.runningMutex.Unlock()
@@ -187,6 +187,7 @@ func (p *PubSubPool) Start() (err error) {
 	return
 }
 
+// Stop is something
 func (p *PubSubPool) Stop() {
 	p.runningMutex.Lock()
 	defer p.runningMutex.Unlock()

@@ -1,4 +1,4 @@
-package main
+package pubsub
 
 import (
 	"encoding/json"
@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"websocket"
 )
 
 // Twitch Helix API variables
@@ -64,7 +66,7 @@ type PubSub interface {
 
 // PubSubConn is something
 type PubSubConn struct {
-	ws        *basicws.BasicWebsocket
+	ws        *websocket.BasicWebsocket
 	authToken string
 
 	pingDone chan bool
@@ -81,7 +83,7 @@ type PubSubConn struct {
 
 // NewPubSubConn is something
 func NewPubSubConn(authToken string, header http.Header) *PubSubConn {
-	ws := basicws.NewBasicWebsocket(twitchPubSubURL, header)
+	ws := NewBasicWebsocket(twitchPubSubURL, header)
 	ws.AutoReconnect = true
 
 	conn := &PubSubConn{

@@ -18,10 +18,7 @@ func main() {
 		panic(fmt.Errorf("Fatal error config file: %s", err))
 	}
 
-	// Read in from our config file
-	//clientID := viper.GetString("client_id")
-
-	// // Start the new pub pool
-	// client := NewPub
+	//Read in from our config file
+	clientID := viper.GetString("client_id")
 
 }
