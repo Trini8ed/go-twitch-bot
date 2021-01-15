@@ -28,6 +28,7 @@ func main() {
 	channelName := viper.GetString("channel_name")
 	userAccessToken := viper.GetString("user_access_token")
 
+	// Print our debugging information
 	fmt.Println("-----------------------------------------------------")
 	fmt.Println("Client ID: " + clientID)
 	fmt.Println("Client Secret: " + clientSecret)
@@ -64,11 +65,15 @@ func main() {
 	userID := respUser.Data.Users[0].ID
 	channelID := respUser.Data.Users[0].ID
 
+	// Print our debugging information
+	fmt.Println("User ID: " + userID)
+	fmt.Println("Channel ID: " + channelID)
+
 	// Start listening to the PubSub API
 	pubSubClient := pubsub.NewPool(userAccessToken, http.Header{})
 
 	// Create the topic to listen to
-	topic := fmt.Sprintf("chat_moderator_actions.%v.%v", userID, channelID)
+	topic := fmt.Sprintf("channel-points-channel-v1,%v", channelID)
 
 	// Listen to topic
 	_, err = pubSubClient.Listen(topic, func(data pubsub.MessageData) {
