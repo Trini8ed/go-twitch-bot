@@ -1,6 +1,6 @@
 {
     "client_id": "",
     "client_secret": "",
-    "redirect_url": "",
+    "redirect_url": "http://localhost",
     "channel_name": ""
 }

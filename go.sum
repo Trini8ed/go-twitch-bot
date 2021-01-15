@@ -129,6 +129,12 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/nicklaw5/helix v1.4.0 h1:ZaDXSQ0zwoF7TIIiexfcYE/wog3as/uTm3rR0C5Z1L4=
 github.com/nicklaw5/helix v1.4.0/go.mod h1:XeeXY7oY5W+MVMu6wF4qGm8uvjZ1/Nss0FqprVkXKrg=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
+github.com/pajbot/utils v1.0.0 h1:LiVOInr6gY/yA82QsgTnyGJaBcMOB0GaRYKDIC/4rB4=
+github.com/pajbot/utils v1.0.0/go.mod h1:lLYJXlC7fGL4FYvdZk+IQerV5zgwerjIsKDUJNb7LuE=
+github.com/pajlada/go-twitch-pubsub v0.0.0-20190525183000-d70aff1c5c71 h1:oznyU+DAD2koiTYyytzjFf4WLEynYRxig0HwV6NV8jM=
+github.com/pajlada/go-twitch-pubsub v0.0.0-20190525183000-d70aff1c5c71/go.mod h1:dGYg2nHDP/eiV699HP0DN0LjAQi1r1i+VwcBM9wvWyI=
+github.com/pajlada/lidl-normalize v0.0.0-20180520094422-e6eb1186f156 h1:gM90lglyDaP+A0qclA3q8jCELnhHyb5EDvGCg649Di0=
+github.com/pajlada/lidl-normalize v0.0.0-20180520094422-e6eb1186f156/go.mod h1:ZwY6Ly1huS7aYfv8dH8tzbaBPwL/ZBgo2EsGiMifLA4=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0 h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181zc=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=

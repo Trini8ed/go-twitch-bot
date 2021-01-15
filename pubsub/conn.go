@@ -6,12 +6,12 @@ import (
 	"sync"
 )
 
-// PubSubPool is something
-type PubSubPool struct {
+// Pool is something
+type Pool struct {
 	running      bool
 	runningMutex sync.Mutex
 
-	connections      []*PubSubConn
+	connections      []*Conn
 	connectionsMutex sync.RWMutex
 
 	authToken string
@@ -20,26 +20,26 @@ type PubSubPool struct {
 	// Called on pool start
 	OnStart func()
 	// Called on individual connection connect/reconnect
-	OnConnect func(conn *PubSubConn)
+	OnConnect func(conn *Conn)
 	// Called on errors
-	OnError func(*PubSubConn, error, interface{})
+	OnError func(*Conn, error, interface{})
 }
 
-// NewPubSubPool is something
-func NewPubSubPool(authToken string, header http.Header) *PubSubPool {
-	return &PubSubPool{
+// NewPool is something
+func NewPool(authToken string, header http.Header) *Pool {
+	return &Pool{
 		running:     false,
-		connections: make([]*PubSubConn, 0),
+		connections: make([]*Conn, 0),
 		authToken:   authToken,
 		header:      header,
 
 		OnStart:   func() {},
-		OnConnect: func(conn *PubSubConn) {},
-		OnError:   func(conn *PubSubConn, err error, info interface{}) {},
+		OnConnect: func(conn *Conn) {},
+		OnError:   func(conn *Conn, err error, info interface{}) {},
 	}
 }
 
-func (p *PubSubPool) getTopicByName(name string) (*Topic, *PubSubConn) {
+func (p *Pool) getTopicByName(name string) (*Topic, *Conn) {
 	p.connectionsMutex.RLock()
 	defer p.connectionsMutex.RUnlock()
 	for _, conn := range p.connections {
@@ -51,12 +51,12 @@ func (p *PubSubPool) getTopicByName(name string) (*Topic, *PubSubConn) {
 	return nil, nil
 }
 
-func (p *PubSubPool) createNewConnection() *PubSubConn {
+func (p *Pool) createNewConnection() *Conn {
 	p.connectionsMutex.Lock()
 	defer p.connectionsMutex.Unlock()
 
 	// create and configure connection
-	newConn := NewPubSubConn(p.authToken, p.header)
+	newConn := NewConn(p.authToken, p.header)
 	newConn.OnConnect = func() {
 		p.OnConnect(newConn)
 	}
@@ -78,7 +78,7 @@ func (p *PubSubPool) createNewConnection() *PubSubConn {
 	return newConn
 }
 
-func (p *PubSubPool) getTargetConnection() (targetConnection *PubSubConn) {
+func (p *Pool) getTargetConnection() (targetConnection *Conn) {
 	p.connectionsMutex.RLock()
 	if len(p.connections) == 0 {
 		// No connections yet
@@ -102,7 +102,7 @@ func (p *PubSubPool) getTargetConnection() (targetConnection *PubSubConn) {
 }
 
 // Listen is something
-func (p *PubSubPool) Listen(topic string, callback TopicCallback) (*Topic, error) {
+func (p *Pool) Listen(topic string, callback TopicCallback) (*Topic, error) {
 	if t, _ := p.getTopicByName(topic); t != nil {
 		return nil, fmt.Errorf("listen topic %s: %w", topic, ErrDuplicateTopic)
 	}
@@ -116,7 +116,7 @@ func (p *PubSubPool) Listen(topic string, callback TopicCallback) (*Topic, error
 }
 
 // ListenMany is something
-func (p *PubSubPool) ListenMany(callback TopicCallback, topics ...string) ([]*Topic, error) {
+func (p *Pool) ListenMany(callback TopicCallback, topics ...string) ([]*Topic, error) {
 	var returnedTopics []*Topic
 	for _, topic := range topics {
 		t, err := p.Listen(topic, callback)
@@ -129,7 +129,7 @@ func (p *PubSubPool) ListenMany(callback TopicCallback, topics ...string) ([]*To
 }
 
 // Unlisten is something
-func (p *PubSubPool) Unlisten(topic string) error {
+func (p *Pool) Unlisten(topic string) error {
 	t, conn := p.getTopicByName(topic)
 	if t == nil {
 		return fmt.Errorf("unlisten topic %s: %w", topic, ErrInvalidTopic)
@@ -143,7 +143,7 @@ func (p *PubSubPool) Unlisten(topic string) error {
 }
 
 // UnlistenMany is something
-func (p *PubSubPool) UnlistenMany(topics ...string) error {
+func (p *Pool) UnlistenMany(topics ...string) error {
 	for _, topic := range topics {
 		err := p.Unlisten(topic)
 		if err != nil {
@@ -154,13 +154,13 @@ func (p *PubSubPool) UnlistenMany(topics ...string) error {
 }
 
 // IsListening is something
-func (p *PubSubPool) IsListening(topic string) bool {
+func (p *Pool) IsListening(topic string) bool {
 	t, _ := p.getTopicByName(topic)
 	return t != nil
 }
 
 // Start is something
-func (p *PubSubPool) Start() (err error) {
+func (p *Pool) Start() (err error) {
 	p.runningMutex.Lock()
 	defer p.runningMutex.Unlock()
 
@@ -188,7 +188,7 @@ func (p *PubSubPool) Start() (err error) {
 }
 
 // Stop is something
-func (p *PubSubPool) Stop() {
+func (p *Pool) Stop() {
 	p.runningMutex.Lock()
 	defer p.runningMutex.Unlock()
 

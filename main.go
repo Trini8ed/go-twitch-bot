@@ -44,16 +44,19 @@ func main() {
 	}
 
 	// Get the app access token with specified parameters
-	respAppToken, err := helixClient.RequestAppAccessToken([]string{"channel:read:redemptions"})
+	respAppToken, err := helixClient.RequestAppAccessToken([]string{"channel:moderate"})
 	if err != nil {
 		panic(err)
 	}
+
+	// Save the app access token
+	appToken := respAppToken.Data.AccessToken
 
 	fmt.Println("-- App Token ----------------------------------------")
 	fmt.Println(respAppToken.Data)
 
 	// Set the access token on the client
-	helixClient.SetAppAccessToken(respAppToken.Data.AccessToken)
+	helixClient.SetAppAccessToken(appToken)
 
 	// Get the channel id of the user
 	respUser, err := helixClient.GetUsers(&helix.UsersParams{
@@ -69,22 +72,53 @@ func main() {
 	fmt.Println("-- Get Users ----------------------------------------")
 	fmt.Println(respUser.Data)
 
+	// Get the user id and channel id
+	userID := respUser.Data.Users[0].ID
+	channelID := respUser.Data.Users[0].ID
+
 	// Start listening to the PubSub API
-	pubSubClient := pubsub.NewPubSubPool(respAppToken.Data.AccessToken, http.Header{})
+	pubSubClient := pubsub.NewPool(appToken, http.Header{})
 
 	// Create the topic to listen to
-	topic := fmt.Sprintf("channel-points-channel-v1.%v", respUser.Data.Users[0])
+	topic := fmt.Sprintf("chat_moderator_actions.%v.%v", userID, channelID)
 
-	// Start listening to the messages
+	// Listen to topic
 	_, err = pubSubClient.Listen(topic, func(data pubsub.MessageData) {
-		fmt.Printf(data.Message)
+		fmt.Printf("Moderator action: %s\n", data.Message)
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	for {
-		// Keep listening for changes forever
+	// Function callback for when we start our PubSub client
+	pubSubClient.OnStart = func() {
+		fmt.Println("-- OnStart --------------------------------------")
+		fmt.Println("Starting Pub Sub!")
 	}
+
+	// Function callback for when we get an error on our PubSub client
+	pubSubClient.OnError = func(psc *pubsub.Conn, e error, i interface{}) {
+		fmt.Println("-- OnError --------------------------------------")
+		fmt.Println("Error has occurred")
+		fmt.Println(psc)
+		fmt.Println(i)
+		panic(e)
+	}
+
+	// Function callback for when our PubSub client connects to Twitch API
+	pubSubClient.OnConnect = func(conn *pubsub.Conn) {
+		fmt.Println("-- OnConnect ------------------------------------")
+		fmt.Println("Connected to Twitch API")
+	}
+
+	// Start and wait
+	err = pubSubClient.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	// Block the main thread so we keep listening to topics
+	wait := make(chan bool)
+	<-wait
 
 }

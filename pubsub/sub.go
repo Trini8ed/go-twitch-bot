@@ -51,8 +51,8 @@ var (
 	ErrBadTopic = errors.New("pubsub ERR_BADTOPIC")
 )
 
-// PubSub is something
-type PubSub interface {
+// Sub is something
+type Sub interface {
 	Listen(topic string, callback TopicCallback) (*Topic, error)
 	ListenMany(callback TopicCallback, topics ...string) ([]*Topic, error)
 
@@ -62,8 +62,8 @@ type PubSub interface {
 	IsListening(topic string) bool
 }
 
-// PubSubConn is something
-type PubSubConn struct {
+// Conn is something
+type Conn struct {
 	ws        *BasicWebsocket
 	authToken string
 
@@ -79,12 +79,12 @@ type PubSubConn struct {
 	OnError func(err error, info interface{})
 }
 
-// NewPubSubConn is something
-func NewPubSubConn(authToken string, header http.Header) *PubSubConn {
+// NewConn is something
+func NewConn(authToken string, header http.Header) *Conn {
 	ws := NewBasicWebsocket(twitchPubSubURL, header)
 	ws.AutoReconnect = true
 
-	conn := &PubSubConn{
+	conn := &Conn{
 		ws:        ws,
 		authToken: authToken,
 
@@ -106,7 +106,7 @@ func NewPubSubConn(authToken string, header http.Header) *PubSubConn {
 	return conn
 }
 
-func (c *PubSubConn) connectHandler() {
+func (c *Conn) connectHandler() {
 	// stop any current ping goroutines
 	select {
 	case c.pingDone <- true:
@@ -124,15 +124,15 @@ func (c *PubSubConn) connectHandler() {
 	c.OnConnect()
 }
 
-func (c *PubSubConn) listenToTopic(topic *Topic) error {
+func (c *Conn) listenToTopic(topic *Topic) error {
 	return c.ws.SendJSON(topic.ListenMessage())
 }
 
-func (c *PubSubConn) unlistenToTopic(topic *Topic) error {
+func (c *Conn) unlistenToTopic(topic *Topic) error {
 	return c.ws.SendJSON(topic.UnlistenMessage())
 }
 
-func (c *PubSubConn) listenToAllTopics() (*Topic, error) {
+func (c *Conn) listenToAllTopics() (*Topic, error) {
 	c.topicsMutex.RLock()
 	defer c.topicsMutex.RUnlock()
 	for _, topic := range c.topics {
@@ -144,7 +144,7 @@ func (c *PubSubConn) listenToAllTopics() (*Topic, error) {
 	return nil, nil
 }
 
-func (c *PubSubConn) rawMessageHandler(data []byte) (err error) {
+func (c *Conn) rawMessageHandler(data []byte) (err error) {
 	base := BaseMessage{}
 	err = json.Unmarshal(data, &base)
 	if err != nil {
@@ -166,11 +166,11 @@ func (c *PubSubConn) rawMessageHandler(data []byte) (err error) {
 	}
 }
 
-func (c *PubSubConn) onPong() {
+func (c *Conn) onPong() {
 	c.pongChan <- true
 }
 
-func (c *PubSubConn) sendPing() error {
+func (c *Conn) sendPing() error {
 	message := &BaseMessage{
 		Type: "PING",
 	}
@@ -202,7 +202,7 @@ func (c *PubSubConn) sendPing() error {
 	return nil
 }
 
-func (c *PubSubConn) startPing() chan bool {
+func (c *Conn) startPing() chan bool {
 	doneChan := make(chan bool, 1)
 	go func() {
 		fire := func() {
@@ -227,7 +227,7 @@ func (c *PubSubConn) startPing() chan bool {
 	return doneChan
 }
 
-func (c *PubSubConn) onResponse(data []byte) error {
+func (c *Conn) onResponse(data []byte) error {
 	response := ResponseMessage{}
 	err := json.Unmarshal(data, &response)
 	if err != nil {
@@ -255,7 +255,7 @@ func (c *PubSubConn) onResponse(data []byte) error {
 	return nil
 }
 
-func (c *PubSubConn) onMessage(data []byte) error {
+func (c *Conn) onMessage(data []byte) error {
 	message := MessageMessage{}
 	err := json.Unmarshal(data, &message)
 	if err != nil {
@@ -264,14 +264,14 @@ func (c *PubSubConn) onMessage(data []byte) error {
 
 	topic := c.getTopicByName(message.Data.Topic)
 	if topic == nil {
-		return fmt.Errorf("recieved message for invalid topic %q: %w", message.Data.Topic, ErrInvalidTopic)
+		return fmt.Errorf("received message for invalid topic %q: %w", message.Data.Topic, ErrInvalidTopic)
 	}
 
 	go topic.Callback(message.Data)
 	return nil
 }
 
-func (c *PubSubConn) getTopicByNonce(nonce string) *Topic {
+func (c *Conn) getTopicByNonce(nonce string) *Topic {
 	c.topicsMutex.RLock()
 	defer c.topicsMutex.RUnlock()
 
@@ -283,7 +283,7 @@ func (c *PubSubConn) getTopicByNonce(nonce string) *Topic {
 	return nil
 }
 
-func (c *PubSubConn) getTopicByName(name string) *Topic {
+func (c *Conn) getTopicByName(name string) *Topic {
 	c.topicsMutex.RLock()
 	defer c.topicsMutex.RUnlock()
 
@@ -296,7 +296,7 @@ func (c *PubSubConn) getTopicByName(name string) *Topic {
 }
 
 // Listen is something
-func (c *PubSubConn) Listen(topic string, callback TopicCallback) (*Topic, error) {
+func (c *Conn) Listen(topic string, callback TopicCallback) (*Topic, error) {
 	if c.Capacity() == 0 {
 		return nil, ErrTooManyTopics
 	}
@@ -331,7 +331,7 @@ func (c *PubSubConn) Listen(topic string, callback TopicCallback) (*Topic, error
 }
 
 // ListenMany is something
-func (c *PubSubConn) ListenMany(callback TopicCallback, topics ...string) ([]*Topic, error) {
+func (c *Conn) ListenMany(callback TopicCallback, topics ...string) ([]*Topic, error) {
 	var returnedTopics []*Topic
 	for _, topic := range topics {
 		t, err := c.Listen(topic, callback)
@@ -343,7 +343,7 @@ func (c *PubSubConn) ListenMany(callback TopicCallback, topics ...string) ([]*To
 	return returnedTopics, nil
 }
 
-func (c *PubSubConn) removeTopic(topic *Topic) bool {
+func (c *Conn) removeTopic(topic *Topic) bool {
 	c.topicsMutex.Lock()
 	defer c.topicsMutex.Unlock()
 
@@ -368,7 +368,7 @@ func (c *PubSubConn) removeTopic(topic *Topic) bool {
 }
 
 // Unlisten is something
-func (c *PubSubConn) Unlisten(topic string) error {
+func (c *Conn) Unlisten(topic string) error {
 	if c.getTopicByName(topic) == nil {
 		return fmt.Errorf("unlisten topic %q: %w", topic, ErrInvalidTopic)
 	}
@@ -396,7 +396,7 @@ func (c *PubSubConn) Unlisten(topic string) error {
 }
 
 // UnlistenMany is something
-func (c *PubSubConn) UnlistenMany(topics ...string) error {
+func (c *Conn) UnlistenMany(topics ...string) error {
 	for _, topic := range topics {
 		err := c.Unlisten(topic)
 		if err != nil {
@@ -407,26 +407,26 @@ func (c *PubSubConn) UnlistenMany(topics ...string) error {
 }
 
 // IsListening is something
-func (c *PubSubConn) IsListening(topic string) bool {
+func (c *Conn) IsListening(topic string) bool {
 	return c.getTopicByName(topic) != nil
 }
 
 // Count returns the topic count
-func (c *PubSubConn) Count() int {
+func (c *Conn) Count() int {
 	c.topicsMutex.RLock()
 	defer c.topicsMutex.RUnlock()
 	return len(c.topics)
 }
 
 // Capacity returns the capacity for more topics
-func (c *PubSubConn) Capacity() int {
+func (c *Conn) Capacity() int {
 	c.topicsMutex.RLock()
 	defer c.topicsMutex.RUnlock()
 	return maxTopics - len(c.topics)
 }
 
 // Start is something
-func (c *PubSubConn) Start() (err error) {
+func (c *Conn) Start() (err error) {
 	err = c.ws.Connect()
 	if err != nil {
 		return
@@ -436,7 +436,7 @@ func (c *PubSubConn) Start() (err error) {
 }
 
 // Stop is something
-func (c *PubSubConn) Stop() {
+func (c *Conn) Stop() {
 	if !c.ws.IsConnected() {
 		return
 	}
