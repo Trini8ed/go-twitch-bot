@@ -26,37 +26,25 @@ func main() {
 	clientSecret := viper.GetString("client_secret")
 	redirectURL := viper.GetString("redirect_url")
 	channelName := viper.GetString("channel_name")
+	userAccessToken := viper.GetString("user_access_token")
 
 	fmt.Println("-----------------------------------------------------")
 	fmt.Println("Client ID: " + clientID)
 	fmt.Println("Client Secret: " + clientSecret)
 	fmt.Println("Redirect URL: " + redirectURL)
 	fmt.Println("Channel Name: " + channelName)
+	fmt.Println("User Access Token: " + userAccessToken)
 
 	// Authorize the app
 	helixClient, err := helix.NewClient(&helix.Options{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		RedirectURI:  redirectURL,
+		ClientID: clientID,
+		//ClientSecret: clientSecret,
+		UserAccessToken: userAccessToken,
+		RedirectURI:     redirectURL,
 	})
 	if err != nil {
 		panic(err)
 	}
-
-	// Get the app access token with specified parameters
-	respAppToken, err := helixClient.RequestAppAccessToken([]string{"channel:moderate"})
-	if err != nil {
-		panic(err)
-	}
-
-	// Save the app access token
-	appToken := respAppToken.Data.AccessToken
-
-	fmt.Println("-- App Token ----------------------------------------")
-	fmt.Println(respAppToken.Data)
-
-	// Set the access token on the client
-	helixClient.SetAppAccessToken(appToken)
 
 	// Get the channel id of the user
 	respUser, err := helixClient.GetUsers(&helix.UsersParams{
@@ -77,13 +65,14 @@ func main() {
 	channelID := respUser.Data.Users[0].ID
 
 	// Start listening to the PubSub API
-	pubSubClient := pubsub.NewPool(appToken, http.Header{})
+	pubSubClient := pubsub.NewPool(userAccessToken, http.Header{})
 
 	// Create the topic to listen to
 	topic := fmt.Sprintf("chat_moderator_actions.%v.%v", userID, channelID)
 
 	// Listen to topic
 	_, err = pubSubClient.Listen(topic, func(data pubsub.MessageData) {
+		fmt.Printf("-- PubSub Update ---------------------------------")
 		fmt.Printf("Moderator action: %s\n", data.Message)
 	})
 	if err != nil {
