@@ -1,9 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
+	"time"
 
+	obsws "github.com/christopher-dG/go-obs-websocket"
 	"github.com/nicklaw5/helix"
 	"github.com/spf13/viper"
 	"github.com/trini8ed/go-twitch-bot/pubsub"
@@ -27,6 +32,9 @@ func main() {
 	redirectURL := viper.GetString("redirect_url")
 	channelName := viper.GetString("channel_name")
 	userAccessToken := viper.GetString("user_access_token")
+	obsPort := viper.GetInt("obs_port")
+	obsHostname := viper.GetString("obs_hostname")
+	obsPassword := viper.GetString("obs_password")
 
 	// Print our debugging information
 	fmt.Println("-----------------------------------------------------")
@@ -35,6 +43,18 @@ func main() {
 	fmt.Println("Redirect URL: " + redirectURL)
 	fmt.Println("Channel Name: " + channelName)
 	fmt.Println("User Access Token: " + userAccessToken)
+	fmt.Println("-----------------------------------------------------")
+	fmt.Println("Host & Port: " + obsHostname + ":" + strconv.Itoa(obsPort))
+
+	// Setup timeout for requests for OBS
+	obsws.SetReceiveTimeout(time.Second * 2)
+
+	// Connect to OBS client
+	c := obsws.Client{Host: obsHostname, Port: obsPort, Password: obsPassword}
+	if err := c.Connect(); err != nil {
+		log.Fatal(err)
+	}
+	defer c.Disconnect()
 
 	// Authorize the app
 	helixClient, err := helix.NewClient(&helix.Options{
@@ -73,12 +93,49 @@ func main() {
 	pubSubClient := pubsub.NewPool(userAccessToken, http.Header{})
 
 	// Create the topic to listen to
-	topic := fmt.Sprintf("channel-points-channel-v1.%v", channelID)
+	topic := fmt.Sprintf("channel-points-channel-v1.%s", channelID)
 
 	// Listen to topic
 	_, err = pubSubClient.Listen(topic, func(data pubsub.MessageData) {
 		fmt.Println("-- PubSub Update ---------------------------------")
-		fmt.Println(data.Message)
+
+		// A reward has been redeemed cast to object
+		var rewardRedeemed pubsub.RewardRedeemed
+		json.Unmarshal([]byte(data.Message), &rewardRedeemed)
+
+		// Grab the source name from our config file
+		musicSource := viper.GetString("music_source")
+
+		// Filter out unwanted titles that we don't need
+		switch title := rewardRedeemed.Data.Redemption.Reward.Title; title {
+		case pubsub.StatusMuteMusic:
+			// Send and receive a request asynchronously.
+			req := obsws.NewSetMuteRequest(musicSource, true)
+			if err := req.Send(c); err != nil {
+				log.Fatal(err)
+			}
+			// This will block until the response comes (potentially forever).
+			resp, err := req.Receive()
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Println("successful?:", resp.Status())
+		case pubsub.StatusUnMuteMusic:
+			// Send and receive a request asynchronously.
+			req := obsws.NewSetMuteRequest(musicSource, false)
+			if err := req.Send(c); err != nil {
+				log.Fatal(err)
+			}
+			// This will block until the response comes (potentially forever).
+			resp, err := req.Receive()
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Println("successful?:", resp.Status())
+		default:
+			// Invalid title was passed
+			fmt.Printf("Invalid redemption title \"%s\" was entered\n", title)
+		}
 	})
 	if err != nil {
 		panic(err)
