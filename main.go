@@ -73,12 +73,12 @@ func main() {
 	pubSubClient := pubsub.NewPool(userAccessToken, http.Header{})
 
 	// Create the topic to listen to
-	topic := fmt.Sprintf("channel-points-channel-v1,%v", channelID)
+	topic := fmt.Sprintf("channel-points-channel-v1.%v", channelID)
 
 	// Listen to topic
 	_, err = pubSubClient.Listen(topic, func(data pubsub.MessageData) {
-		fmt.Printf("-- PubSub Update ---------------------------------")
-		fmt.Printf("Moderator action: %s\n", data.Message)
+		fmt.Println("-- PubSub Update ---------------------------------")
+		fmt.Println(data.Message)
 	})
 	if err != nil {
 		panic(err)
