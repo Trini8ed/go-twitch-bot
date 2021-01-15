@@ -61,4 +61,5 @@ type RewardRedeemed struct {
 const (
 	StatusUnMuteMusic = "Turn on the music B)" // Status indicating that OBS needs to mute the music
 	StatusMuteMusic   = "MUTE THE MUSIC"       // Status indicating that OBS needs to un-mute the music
+	StatusSkipSong    = "Skip song"            // Status indicating to execute CMD mdb next
 )

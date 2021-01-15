@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os/exec"
 	"strconv"
 	"time"
 
@@ -119,7 +120,7 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Println("successful?:", resp.Status())
+			log.Println("Music has been set to: ", resp.Status())
 		case pubsub.StatusUnMuteMusic:
 			// Send and receive a request asynchronously.
 			req := obsws.NewSetMuteRequest(musicSource, false)
@@ -131,7 +132,20 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Println("successful?:", resp.Status())
+			log.Println("Music has been set to: ", resp.Status())
+		case pubsub.StatusSkipSong:
+			// Command line arguments to use
+			args := []string{"next"}
+
+			// Execute the command to skip the next song
+			cmd := exec.Command("mpc", args...)
+
+			// Execute the command
+			_, err = cmd.Output()
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Println("Song has been skipped")
 		default:
 			// Invalid title was passed
 			fmt.Printf("Invalid redemption title \"%s\" was entered\n", title)
