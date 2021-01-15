@@ -59,6 +59,6 @@ type RewardRedeemed struct {
 
 // Constants related to the Twitch Bot
 const (
-	StatusMuteMusic   = "Turn on the music B)" // Status indicating that OBS needs to mute the music
-	StatusUnMuteMusic = "MUTE THE MUSIC"       // Status indicating that OBS needs to un-mute the music
+	StatusUnMuteMusic = "Turn on the music B)" // Status indicating that OBS needs to mute the music
+	StatusMuteMusic   = "MUTE THE MUSIC"       // Status indicating that OBS needs to un-mute the music
 )
